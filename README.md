@@ -2,7 +2,7 @@
 
 ## Overview
 
-The house sistem provide when some house is builded to register the house, and after some time then some one can buy it or inherit it.
+The house system provide when some house is builded to register the house, and after some time then some one can buy it or inherit it.
 
 ## Data Structures
 
