@@ -1,0 +1,26 @@
+type BuyHousePayoad = record {
+  street : text;
+  owner : text;
+  city : text;
+  price : float64;
+};
+type House = record {
+  id : text;
+  street : text;
+  owner : text;
+  city : text;
+  createdAt : nat64;
+  updatedAt : nat64;
+  price : float64;
+};
+type InheritingHousePayoad = record { owner : text };
+type _AzleResult = variant { Ok : House; Err : text };
+type _AzleResult_1 = variant { Ok : vec House; Err : text };
+service : () -> {
+  addHouse : (BuyHousePayoad) -> (_AzleResult);
+  buyHouse : (text, BuyHousePayoad) -> (_AzleResult);
+  destroyHouse : (text) -> (_AzleResult);
+  getAllHouses : () -> (_AzleResult_1) query;
+  getHousee : (text) -> (_AzleResult) query;
+  inheritHouse : (text, InheritingHousePayoad) -> (_AzleResult);
+}
