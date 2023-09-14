@@ -1,7 +1,6 @@
-
 // cannister code goes here
 import { $query, $update, Record, StableBTreeMap, Vec, match, Result, nat64, ic, Opt } from 'azle';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, validate as isValidUUID } from 'uuid';
 
 type House = Record<{
     id: string;
@@ -13,14 +12,14 @@ type House = Record<{
     price: number;
 }>
 
-type BuyHousePayoad = Record<{
+type BuyHousePayload = Record<{
     city: string;
     street: string;
     owner: string;
-    price: number
+    price: number;
 }>
 
-type InheritingHousePayoad = Record<{
+type InheritHousePayload = Record<{
     owner: string;
 }>
 
@@ -32,50 +31,87 @@ export function getAllHouses(): Result<Vec<House>, string> {
 }
 
 $query;
-export function getHousee(houseId: string): Result<House, string> {
-    return match(houseStorage.get(houseId), {
-        Some: (message) => Result.Ok<House, string>(message),
-        None: () => Result.Err<House, string>(`a house with id=${houseId} not found`)
+export function getHouse(id: string): Result<House, string> {
+    if (!isValidUUID(id)) {
+        return Result.Err<House, string>("Please enter a valid House ID!");
+    }
+
+    return match(houseStorage.get(id), {
+        Some: (house) => Result.Ok<House, string>(house),
+        None: () => Result.Err<House, string>(`A house with ID ${id} was not found.`),
     });
 }
 
 $update;
-export function addHouse(payload: BuyHousePayoad): Result<House, string> {
-    const house: House = { id: uuidv4(), createdAt: ic.time(), updatedAt: ic.time(), ...payload };
+export function addHouse(payload: BuyHousePayload): Result<House, string> {
+    if (!payload.city || !payload.street || !payload.owner || payload.price < 0) {
+        return Result.Err<House, string>("Invalid house data. Please provide valid data.");
+    }
+
+    const house: House = {
+        id: uuidv4(),
+        createdAt: ic.time(),
+        updatedAt: ic.time(),
+        ...payload,
+    };
     houseStorage.insert(house.id, house);
     return Result.Ok(house);
 }
 
-
 $update;
-export function buyHouse(id: string, payload: BuyHousePayoad): Result<House, string> {
+export function buyHouse(id: string, payload: BuyHousePayload): Result<House, string> {
+    if (!isValidUUID(id)) {
+        return Result.Err<House, string>("Please enter a valid House ID!");
+    }
+
+    if (!payload.city || !payload.street || !payload.owner || payload.price < 0) {
+        return Result.Err<House, string>("Invalid house data. Please provide valid data.");
+    }
+
     return match(houseStorage.get(id), {
-        Some: (message) => {
-            const updatedMessage: House = { ...message, ...payload, updatedAt: ic.time() };
-            houseStorage.insert(message.id, updatedMessage);
-            return Result.Ok<House, string>(updatedMessage);
+        Some: (house) => {
+            const updatedHouse: House = {
+                ...house,
+                ...payload,
+                updatedAt: ic.time(),
+            };
+            houseStorage.insert(house.id, updatedHouse);
+            return Result.Ok<House, string>(updatedHouse);
         },
-        None: () => Result.Err<House, string>(`couldn't update a house with id=${id}. House not found!`)
+        None: () => Result.Err<House, string>(`A house with ID ${id} was not found.`),
     });
 }
 
 $update;
-export function inheritHouse(id: string, payload: InheritingHousePayoad): Result<House, string> {
+export function inheritHouse(id: string, payload: InheritHousePayload): Result<House, string> {
+    if (!isValidUUID(id)) {
+        return Result.Err<House, string>("Please enter a valid House ID!");
+    }
+
     return match(houseStorage.get(id), {
-        Some: (message) => {
-            const updatedMessage: House = { ...message, ...payload, price: null, updatedAt: ic.time() };
-            houseStorage.insert(message.id, updatedMessage);
-            return Result.Ok<House, string>(updatedMessage);
+        Some: (house) => {
+            const updatedHouse: House = {
+                ...house,
+                ...payload,
+                price: 0, // Set price to 0 when inheriting
+                updatedAt: ic.time(),
+            };
+            houseStorage.insert(house.id, updatedHouse);
+            return Result.Ok<House, string>(updatedHouse);
         },
-        None: () => Result.Err<House, string>(`couldn't update a house with id=${id}. House not found!`)
+        None: () => Result.Err<House, string>(`A house with ID ${id} was not found.`),
     });
 }
 
 $update;
 export function destroyHouse(id: string): Result<House, string> {
+    if (!isValidUUID(id)) {
+        return Result.Err<House, string>("Please enter a valid House ID!");
+    }
+
     return match(houseStorage.remove(id), {
-        Some: (destroyHouse) => Result.Ok<House, string>(destroyHouse),
-        None: () => Result.Err<House, string>(`couldn't destroy a message with id=${id}. message not found.`)
+        Some: (destroyedHouse) => Result.Ok<House, string>(destroyedHouse),
+        None: () => Result.Err<House, string>(`A house with ID ${id} was not found.`),
     });
 }
 
@@ -83,12 +119,12 @@ export function destroyHouse(id: string): Result<House, string> {
 globalThis.crypto = {
     // @ts-ignore
     getRandomValues: () => {
-        let array = new Uint8Array(32)
+        let array = new Uint8Array(32);
 
         for (let i = 0; i < array.length; i++) {
-            array[i] = Math.floor(Math.random() * 256)
+            array[i] = Math.floor(Math.random() * 256);
         }
 
-        return array
+        return array;
     }
 }
