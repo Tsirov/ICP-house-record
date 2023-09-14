@@ -1,4 +1,3 @@
-
 // cannister code goes here
 import { $query, $update, Record, StableBTreeMap, Vec, match, Result, nat64, ic, Opt } from 'azle';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,14 +12,14 @@ type House = Record<{
     price: number;
 }>
 
-type BuyHousePayoad = Record<{
+type BuyHousePayload = Record<{
     city: string;
     street: string;
     owner: string;
-    price: number
+    price: number;
 }>
 
-type InheritingHousePayoad = Record<{
+type InheritingHousePayload = Record<{
     owner: string;
 }>
 
@@ -32,51 +31,55 @@ export function getAllHouses(): Result<Vec<House>, string> {
 }
 
 $query;
-export function getHousee(houseId: string): Result<House, string> {
-    return match(houseStorage.get(houseId), {
-        Some: (message) => Result.Ok<House, string>(message),
-        None: () => Result.Err<House, string>(`a house with id=${houseId} not found`)
-    });
+export function getHouse(houseId: string): Result<House, string> {
+    const house = houseStorage.get(houseId);
+    if (house !== null) {
+        return Result.Ok(house);
+    } else {
+        return Result.Err(`A house with id=${houseId} not found`);
+    }
 }
 
 $update;
-export function addHouse(payload: BuyHousePayoad): Result<House, string> {
+export function addHouse(payload: BuyHousePayload): Result<House, string> {
     const house: House = { id: uuidv4(), createdAt: ic.time(), updatedAt: ic.time(), ...payload };
     houseStorage.insert(house.id, house);
     return Result.Ok(house);
 }
 
-
 $update;
-export function buyHouse(id: string, payload: BuyHousePayoad): Result<House, string> {
-    return match(houseStorage.get(id), {
-        Some: (message) => {
-            const updatedMessage: House = { ...message, ...payload, updatedAt: ic.time() };
-            houseStorage.insert(message.id, updatedMessage);
-            return Result.Ok<House, string>(updatedMessage);
-        },
-        None: () => Result.Err<House, string>(`couldn't update a house with id=${id}. House not found!`)
-    });
+export function buyHouse(id: string, payload: BuyHousePayload): Result<House, string> {
+    const existingHouse = houseStorage.get(id);
+    if (existingHouse !== null) {
+        const updatedHouse: House = { ...existingHouse, ...payload, updatedAt: ic.time() };
+        houseStorage.insert(id, updatedHouse);
+        return Result.Ok(updatedHouse);
+    } else {
+        return Result.Err(`Couldn't update a house with id=${id}. House not found!`);
+    }
 }
 
 $update;
-export function inheritHouse(id: string, payload: InheritingHousePayoad): Result<House, string> {
-    return match(houseStorage.get(id), {
-        Some: (message) => {
-            const updatedMessage: House = { ...message, ...payload, price: null, updatedAt: ic.time() };
-            houseStorage.insert(message.id, updatedMessage);
-            return Result.Ok<House, string>(updatedMessage);
-        },
-        None: () => Result.Err<House, string>(`couldn't update a house with id=${id}. House not found!`)
-    });
+export function inheritHouse(id: string, payload: InheritingHousePayload): Result<House, string> {
+    const existingHouse = houseStorage.get(id);
+    if (existingHouse !== null) {
+        // Set price to a default value, e.g., zero
+        const updatedHouse: House = { ...existingHouse, ...payload, price: 0, updatedAt: ic.time() };
+        houseStorage.insert(id, updatedHouse);
+        return Result.Ok(updatedHouse);
+    } else {
+        return Result.Err(`Couldn't update a house with id=${id}. House not found!`);
+    }
 }
 
 $update;
 export function destroyHouse(id: string): Result<House, string> {
-    return match(houseStorage.remove(id), {
-        Some: (destroyHouse) => Result.Ok<House, string>(destroyHouse),
-        None: () => Result.Err<House, string>(`couldn't destroy a message with id=${id}. message not found.`)
-    });
+    const destroyedHouse = houseStorage.remove(id);
+    if (destroyedHouse !== null) {
+        return Result.Ok(destroyedHouse);
+    } else {
+        return Result.Err(`Couldn't destroy a house with id=${id}. House not found.`);
+    }
 }
 
 // a workaround to make uuid package work with Azle
