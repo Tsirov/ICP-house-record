@@ -19,8 +19,8 @@ type _AzleResult_1 = variant { Ok : vec House; Err : text };
 service : () -> {
   addHouse : (BuyHousePayoad) -> (_AzleResult);
   buyHouse : (text, BuyHousePayoad) -> (_AzleResult);
-  destroyHouse : (text) -> (_AzleResult);
   getAllHouses : () -> (_AzleResult_1) query;
-  getHousee : (text) -> (_AzleResult) query;
+  getHouseById : (text) -> (_AzleResult) query;
   inheritHouse : (text, InheritingHousePayoad) -> (_AzleResult);
+  removeHouse : (text) -> (_AzleResult);
 }
